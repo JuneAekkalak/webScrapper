@@ -1,0 +1,6 @@
+{
+  "DATABASE_URI": "mongodb://adminwuris:wurisadmin@192.168.75.58:27017/",
+  "DB_NAME": "wurisdb",
+  "BASEURL": "https://www.scopus.com/authid/detail.uri?authorId=",
+  "SETCRON": "17 11 * * *"
+}

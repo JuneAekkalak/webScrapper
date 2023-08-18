@@ -1,0 +1,192 @@
+const AuthorScopus = require('../../models/AuthorScopus');
+const ArticleScopus = require('../../models/ArticleScopus');
+const Coressponding = require('../../models/Corresponding');
+const Journal = require('../../models/journal.js');
+
+const { ObjectId } = require('mongodb');
+process.setMaxListeners(100);
+
+const insertAuthorDataToDbScopus = async (data) => {
+  try {
+    const objectId = new ObjectId();
+
+    const newAuthor = new AuthorScopus({
+      _id: objectId,
+      author_scopus_id: data.author_scopus_id,
+      author_name: data.name,
+      citations: data.citation,
+      citations_by: data.citations_by,
+      documents: data.documents,
+      h_index: data.h_index,
+      subject_area: data.subject_area,
+      citations_graph: data.citations_graph,
+      documents_graph: data.documents_graph,
+      url: data.url,
+    });
+
+    await newAuthor.save();
+    console.log('\nAuthors Data of | ' + data.name + ' saved successfully to MongoDB.\n');
+
+  } catch (error) {
+    console.error('Error saving Authors data to MongoDB:', error);
+  }
+};
+
+
+const insertWuDocBeforAuthorScopus = async (scopus_id, wu_documents, author_name) => {
+  try {
+    const objectId = new ObjectId();
+
+    const newAuthor = new AuthorScopus({
+      _id: objectId,
+      author_scopus_id: scopus_id,
+      wu_documents: wu_documents
+    });
+
+    await newAuthor.save();
+    console.log('\nAdded Count Document In Wu Of ', author_name, ' successfully.\n');
+
+  } catch (error) {
+    console.error('Error Added Count Document to MongoDB:', error);
+  }
+};
+
+
+const insertArticleDataToDbScopus = async (data, author_name) => {
+  try {
+    let scopus_id
+    const articles = data.map((articleData) => {
+      scopus_id = articleData.author_scopus_id
+      const article = {
+        eid: articleData.eid,
+        article_name: articleData.name,
+        ...(articleData.hasOwnProperty('source_id') && { source_id: articleData.source_id }),
+        first_author: articleData.first_author,
+        co_author: articleData.co_author,
+        co_author_department: articleData.co_author_department,
+        // corresponding: articleData.corresponding,
+        volume: articleData.volume,
+        issue: articleData.issue,
+        pages: articleData.pages,
+        document_type: articleData.document_type,
+        source_type: articleData.source_type,
+        issn: articleData.issn,
+        original_language: articleData.original_language,
+        publisher: articleData.publisher,
+        author_keywords: articleData.author_keywords,
+        abstract: articleData.abstract,
+        url: articleData.url,
+        author_scopus_id: articleData.author_scopus_id,
+      };
+
+      return article;
+    });
+    await ArticleScopus.insertMany(articles);
+
+    console.log('\nArticles of | ' + author_name + ' saved successfully to MongoDB.');
+    console.log("");
+  } catch (error) {
+    console.error('Error saving Articles data to MongoDB:', error);
+  }
+}
+
+const insertDataToJournal = async (data, source_id) => {
+  try {
+    const newJournal = new Journal({
+      source_id: data.source_id,
+      journal_name: data.journal_name,
+      scopus_coverage_years: data.scopus_coverage_years,
+      publisher: data.publisher,
+      issn: data.issn,
+      eissn: data.eissn,
+      source_type: data.source_type,
+      subject_area: data.subject_area,
+      calculated: data.calculated,
+      changeJournal: data.changeJournal,
+      cite_source: data.cite_source,
+    });
+
+    await newJournal.save();
+    console.log("Journal Data | Source ID:", source_id, "saved successfully to MongoDB.\n");
+  } catch (error) {
+    console.error('Error saving data to MongoDB:', error);
+  }
+};
+
+
+const insertDataToCoressponding = async (data) => {
+  try {
+    const newCoressponding = new Coressponding({
+      scopusEID: data.scopusEID,
+      corresAuthorID: data.corresAuthorID,
+      correspondingData: data.correspondingData,
+    });
+
+    await newCoressponding.save();
+    console.log("\nCoressponding Data | Scopus EID:", data.scopusEID, "saved successfully to MongoDB.\n");
+  } catch (error) {
+    console.error('Error saving data to MongoDB:', error);
+  }
+};
+
+
+const updateDataToJournal = async (data, source_id) => {
+  const newData = data.map(item => {
+    return {
+      cite: item.cite,
+      category: item.category
+    };
+  });
+
+  try {
+    const oldData = await Journal.findOne({ source_id });
+
+    if (!oldData) {
+      console.log("Source ID not found in the database.");
+      return;
+    }
+    oldData.cite_source.push(...newData);
+    oldData.cite_source.sort((a, b) => b.cite.year - a.cite.year);
+    await oldData.save();
+
+    console.log("Journal Data | Source ID:", source_id, "updeted successfully to MongoDB.\n");
+    return oldData;
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+}
+
+const updateDataToAuthor = async (data) => {
+  try {
+    await AuthorScopus.updateOne(
+      { "author_scopus_id": data.author_scopus_id },
+      {
+        $set: {
+          "author_scopus_id": data.author_scopus_id,
+          "author_name": data.name,
+          "citations": data.citation,
+          "citations_by": data.citations_by,
+          "documents": data.documents,
+          "h_index": data.h_index,
+          "subject_area": data.subject_area,
+          "citations_graph": data.citations_graph,
+          "documents_graph": data.documents_graph,
+          "url": data.url,
+        }
+      }
+    )
+    console.log("Author Data of | ", data.name, " updeted successfully to MongoDB.\n");
+  } catch (error) {
+    // console.error("An error occurred:", error);
+  }
+}
+
+module.exports = {
+  insertAuthorDataToDbScopus,
+  insertArticleDataToDbScopus,
+  insertDataToJournal,
+  updateDataToJournal,
+  updateDataToAuthor,
+  insertDataToCoressponding,
+  insertWuDocBeforAuthorScopus
+};

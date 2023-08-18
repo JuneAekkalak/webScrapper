@@ -1,0 +1,13 @@
+[
+  {
+    "message": "Scraping Data For Scopus Completed Successfully.",
+    "finishTime": "2023-08-18 11:28:51",
+    "numAuthorScraping": 5,
+    "numArticleScraping": 37,
+    "numJournalScraping": {
+      "numJournalScraping": 26,
+      "numUpdateCiteScoreYear": 0
+    },
+    "errorLinkRequest": []
+  }
+]
