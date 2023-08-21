@@ -60,8 +60,6 @@ const logging = async () => {
   }
 };
 
-let finshLogScholar
-
 router.get("/scraper-scopus-cron", async (req, res) => {
   try {
     await getOldAuthorData();
