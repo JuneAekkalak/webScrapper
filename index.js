@@ -28,22 +28,6 @@ const PORT = process.env.PORT || 8000;
 
 const swaggerDocument  = JSON.parse(fs.readFileSync('./apiDoc.json', 'utf8'));
 
-
-// const swaggerOptions = {
-//   definition: {
-//     openapi: '3.0.0',
-//     info: {
-//       title: 'Your API Documentation',
-//       version: '1.0.0',
-//       description: 'Documentation for your API',
-//     },
-//   },
-//   apis: ['./apiDoc/*.js'],
-// };
-
-// const swaggerSpec = swaggerJSDoc(swaggerOptions);
-
-
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use('/scopus', authorsScopusRouter);
