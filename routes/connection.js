@@ -18,8 +18,9 @@ router.post('/connect-to-mongodb', async (req, res, next) => {
                 connection: databaseURI,
             });
         } else {
-            res.status(500).json({
+            res.status(200).json({
                 message: 'Failed to connect to MongoDB',
+                connection: databaseURI
             });
         }
     } catch (error) {
