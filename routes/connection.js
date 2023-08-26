@@ -8,9 +8,8 @@ router.use(express.json());
 
 router.post('/connect-to-mongodb', async (req, res, next) => {
     const { databaseURI } = req.body;
-
     try {
-        const isConnected = await connectToMongoDB(databaseURI);
+        const isConnected = await connectToMongoDB(databaseURI); 
 
         if (isConnected) {
             res.json({
