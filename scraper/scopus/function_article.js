@@ -516,7 +516,7 @@ const scraperOneArticleScopus = async (eid) => {
 
     const batchSize = 7;
     const article_detail = [];
-    const all_eid = eid.split(",").map((e) => e.trim());
+    const all_eid = eid.split(",").map((e) => e.trim()).filter((item) => item !== "");
     console.log("all_eid = ", all_eid);
     let sizeLoop =
       all_eid.length < batchSize && all_eid.length > 0

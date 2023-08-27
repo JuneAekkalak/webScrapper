@@ -54,8 +54,6 @@ const logging = async () => {
   }
 };
 
-let finshLogScholar
-
 router.get("/scraper-scopus-cron", async (req, res) => {
   try {
     await getOldAuthorData();
@@ -82,14 +80,12 @@ router.get("/scraper-scopus-cron", async (req, res) => {
         await axios.get(`${baseApi}scraper/scopus-journal`);
         finishLog = await logging()
         resetVariableJournal();
-        // await createLogFile(finshLogScholar, "scholar");
         res.status(200).json(finishLog);
       }, 1500);
     } else {
       await Promise.all([authorRequest, articleRequest, journalRequest]);
       finishLog = await logging()
       resetVariableJournal();
-      // await createLogFile(finshLogScholar, "scholar");
       res.status(200).json(finishLog);
     }
     console.log("\n---------------------------------------------------------------")
@@ -101,29 +97,6 @@ router.get("/scraper-scopus-cron", async (req, res) => {
     console.error("Cron job error:", error);
     res.status(500).json({
       error: "Internal server error.",
-    });
-  }
-});
-
-router.get("/scopus-data", async (req, res) => {
-  try {
-    console.log("\nStart Scraping Data From Scopus\n");
-
-    const [author, article] = await Promise.all([
-      scraperAuthorScopus(),
-      scraperArticleScopus(),
-    ]);
-
-    console.log("\nFinish Scraping Data From Scopus\n");
-
-    res.status(200).json({
-      authorScopus: author,
-      articleScopus: article,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Unable to extract data from Scopus",
     });
   }
 });
@@ -188,7 +161,7 @@ router.get("/scraper-author-scopus", async (req, res) => {
     const allURLs = scopus_id.split(",").map((e) => ({
       name: e.trim(),
       scopus_id: e.trim()
-    }));
+    })).filter((item) => item.scopus_id !== "");
     console.log("\nStart Scraping Author Scopus\n");
     const message = await scraperAuthorScopus(allURLs);
     console.log("\nFinish Scraping Author Scopus\n");
@@ -228,7 +201,8 @@ router.get("/scraper-articleOfauthor-scopus", async (req, res) => {
     const allScopusId = scopus_id.split(",").map((e) => ({
       name: e.trim(),
       scopus_id: e.trim()
-    }));
+    })).filter((item) => item.scopus_id !== "");
+
     console.log("\nStart Scraping Article Scopus\n");
     const message = await scraperArticleScopus(allScopusId)
     console.log("\nFinish Scraping Article Scopus\n");
@@ -248,7 +222,7 @@ router.get("/scraper-articleOfauthor-scopus", async (req, res) => {
 router.get("/scraper-journal-scopus", async (req, res) => {
   try {
     const source_id = req.query.source_id;
-    const allSourceId = source_id.split(",").map((e) => e.trim());
+    const allSourceId = source_id.split(",").map((e) => e.trim()).filter((item) => item !== "");
     console.log("\nStart Scraping Journal Scopus\n");
     const message = await scrapJournal(allSourceId)
     console.log("\nFinish Scraping Journal Scopus\n");

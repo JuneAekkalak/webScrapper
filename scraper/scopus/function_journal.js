@@ -70,6 +70,7 @@ const scrapJournal = async (sourceID) => {
     }
 
     let numScraping = 0;
+    let error = linkError
 
     if (addJournalData.length > 0 && journal.length > 0) {
       numScraping = journal.length + addJournalData.length;
@@ -85,7 +86,8 @@ const scrapJournal = async (sourceID) => {
       console.log("\n ---- Finish Scraping New Journal ---- \n");
       const logScrapingJournal = displayLogJournal(
         numScraping,
-        numUpdateCiteScoreYear
+        numUpdateCiteScoreYear,
+        error
       );
       addSourceId = [];
       return logScrapingJournal;
@@ -96,11 +98,13 @@ const scrapJournal = async (sourceID) => {
       );
       const logScrapingJournal = displayLogJournal(
         numScraping,
-        numUpdateCiteScoreYear
+        numUpdateCiteScoreYear,
+        error
       );
       sourceId = [];
       return logScrapingJournal;
     }
+
   } catch (error) {
     console.error("\nError occurred while scraping\n : ", error);
     if (typeof sourceID !== "undefined") {
@@ -109,6 +113,8 @@ const scrapJournal = async (sourceID) => {
       await scrapJournal();
     }
     return [];
+  } finally {
+    linkError = []
   }
 };
 
@@ -138,11 +144,20 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
 
         try {
           const currentIndex = i + index + 1;
-          console.log(currentIndex, "/", journalData.length, "| Source ID:", journalItem);
+          console.log(
+            currentIndex,
+            "/",
+            journalData.length,
+            "| Source ID:",
+            journalItem
+          );
 
           let hasSourceId = await hasSourceID(journalItem);
 
-          if (typeof sourceID !== "undefined" && hasSourceId === false || typeof sourceID === "undefined") {
+          if (
+            (typeof sourceID !== "undefined" && hasSourceId === false) ||
+            typeof sourceID === "undefined"
+          ) {
             browser = await puppeteer.launch({ headless: "new" });
             const page = await browser.newPage();
             const link = `https://www.scopus.com/sourceid/${journalItem}`;
@@ -157,7 +172,17 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
               "#CSCategoryTBody > tr:nth-child(1) > td:nth-child(1) > div.treeLineContainer > span"
             );
 
-            if (response.ok()) {
+            const element = await page.$(
+              "#sourceSearchForm > div > div.alert.alert-danger.marginBottomHalf"
+            );
+
+            let checkSourceNotFound = false;
+
+            if (element) {
+              checkSourceNotFound = true;
+            }
+
+            if (response.ok() && !checkSourceNotFound) {
               let yearLastestInDb = 0;
               let yearLastestInWebPage = 0;
               let numNewJournal = 0;
@@ -170,9 +195,8 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
                   yearDb = 0;
                 }
                 await waitForElement("#year-button > span.ui-selectmenu-text");
-                yearLastestInWebPage = await scraperCiteScoreYearLastestInWebPage(
-                  page
-                );
+                yearLastestInWebPage =
+                  await scraperCiteScoreYearLastestInWebPage(page);
                 yearLastestInDb = yearDb;
 
                 const numberYearLastestInWebPage =
@@ -251,11 +275,18 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
                 checkNotUpdate = true;
                 if (typeof sourceID !== "undefined") {
                   console.log("\n---- Source ID : ", journalItem, "is duplicate");
-                }
-                else if (yearLastestInWebPage === yearLastestInDb) {
-                  console.log("\n-----------------------------------------------------------------------------");
-                  console.log("Cite Score Year of Source ID : ", journalItem, "is not update");
-                  console.log("-----------------------------------------------------------------------------");
+                } else if (yearLastestInWebPage === yearLastestInDb) {
+                  console.log(
+                    "\n-----------------------------------------------------------------------------"
+                  );
+                  console.log(
+                    "Cite Score Year of Source ID : ",
+                    journalItem,
+                    "is not update"
+                  );
+                  console.log(
+                    "-----------------------------------------------------------------------------"
+                  );
                   console.log("yearLastestInWebPage = ", yearLastestInWebPage);
                   console.log("yearLastestInDb = ", yearLastestInDb, "\n");
                 }
@@ -267,8 +298,15 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
                 };
               }
             } else {
-              linkError.push(link);
-              return;
+              const isDuplicate = linkError.includes(link);
+              if (!isDuplicate) {
+                linkError.push(link);
+              }
+              console.log("\nlinkError : ", [link], "\n");
+              return {
+                status: "fulfilled",
+                value: [],
+              };
             }
           } else {
             if (typeof sourceID !== "undefined") {
@@ -279,7 +317,6 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
               value: [],
             };
           }
-
         } catch (error) {
           console.error("Error: ", error);
           return {
@@ -372,11 +409,12 @@ const processBatch = async (journalData, hasSource, round, sourceID) => {
   }
 };
 
-const displayLogJournal = async (numScraping, numUpdateCiteScoreYear) => {
+const displayLogJournal = async (numScraping, numUpdateCiteScoreYear, error) => {
   const logScrapingJournal = {
     message: "Scraping Journal Data For Scopus Completed Successfully.",
     numJournalScraping: numScraping,
     numUpdateCiteScoreYear: numUpdateCiteScoreYear,
+    error: error
   };
   pushLogScraping(logScrapingJournal, "journal");
 
@@ -398,6 +436,7 @@ const resetVariableJournal = async () => {
   addJournalData = [];
   updateCiteScoreYear = [];
   journal = [];
+  linkError = []
 };
 
 const scraperCiteScoreYearLastestInWebPage = async (page) => {
