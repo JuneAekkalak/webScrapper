@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require("axios");
 const cors = require('cors');
-const swaggerJSDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cron = require('node-cron');
 const { getCron } = require('./qurey/setCron')
